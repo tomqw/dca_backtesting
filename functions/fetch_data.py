@@ -1,109 +1,130 @@
 import os
 import requests
 import time
-from datetime import datetime,date,timedelta
+from datetime import datetime, date, timedelta
 
 
-#folder to store the data in
-folder = 'data/'
+# folder to store the data in
+folder = "data/"
 
-#this is the date where we start downloading our prices..
-#if you already have data and want to change the initialStartDate then
-#make sure to reforce a complete download by using latest_data = 0 in updatePriceData function
+# this is the date where we start downloading our prices..
+# if you already have data and want to change the initialStartDate then
+# make sure to reforce a complete download by using latest_data = 0 in updatePriceData function
 
-initialStartDate = str(int(time.mktime(date(2021,1,1).timetuple())))+'000'
+initialStartDate = str(int(time.mktime(date(2021, 1, 1).timetuple()))) + "000"
 
-#put in all pairs you like to download data for.. keep in mind, that it will take some time to download all data if you start a few months back!
-pairs = 'SOLUSDT','LUNAUSDT','AVAXUSDT','ADAUSDT'
+# put in all pairs you like to download data for.. keep in mind, that it will take some time to download all data if you start a few months back!
+pairs = "SOLUSDT", "LUNAUSDT", "AVAXUSDT", "ADAUSDT"
 
-#This function downloads all 1m data into a local file. e.g. MATICUSDT.txt
-def downloadPriceData(symbol,startTime):
 
-    endTime = str(int(time.mktime(datetime.now().timetuple())))+'000'
+# This function downloads all 1m data into a local file. e.g. MATICUSDT.txt
+def downloadPriceData(symbol, startTime):
+    endTime = str(int(time.mktime(datetime.now().timetuple()))) + "000"
 
-    #this is the lowest we can get.. changing that doesnt make sense
-    interval='1m'
+    # this is the lowest we can get.. changing that doesnt make sense
+    interval = "1m"
 
-    #we want as much data as we get per call. the limit is 1500
-    limit = '1500'
+    # we want as much data as we get per call. the limit is 1500
+    limit = "1500"
 
     while int(endTime) > int(startTime):
-        print ("Downloading Price Data: " + symbol)
-        interval='1m'
+        print("Downloading Price Data: " + symbol)
+        interval = "1m"
 
-        url = 'https://api.binance.com/api/v3/klines?symbol='+symbol+'&interval='+interval+'&limit='+str(limit)+'&startTime='+str(startTime)
+        url = (
+            "https://api.binance.com/api/v3/klines?symbol="
+            + symbol
+            + "&interval="
+            + interval
+            + "&limit="
+            + str(limit)
+            + "&startTime="
+            + str(startTime)
+        )
 
         data = requests.get(url).json()
 
-        #lets store everything locally.
-        file_name=symbol + ".txt"
+        # lets store everything locally.
+        file_name = symbol + ".txt"
         f = open(folder + file_name, "a")
 
         for x in data:
-
-            date = datetime.fromtimestamp(x[0]/1000)
-            int_date = int(time.mktime(date.timetuple())*1000)
+            date = datetime.fromtimestamp(x[0] / 1000)
+            int_date = int(time.mktime(date.timetuple()) * 1000)
 
             if int_date < getCurrentTime():
                 price_open = float(x[2])
                 price_high = float(x[2])
                 price_low = float(x[3])
                 price_close = float(x[4])
-                f.write(date.strftime("%Y-%m-%d %H:%M:%S") + ';' + str(price_open) + ';' + str(price_high) + ';' + str(price_low)+ ';' + str(price_close) + '\n')
+                f.write(
+                    date.strftime("%Y-%m-%d %H:%M:%S")
+                    + ";"
+                    + str(price_open)
+                    + ";"
+                    + str(price_high)
+                    + ";"
+                    + str(price_low)
+                    + ";"
+                    + str(price_close)
+                    + "\n"
+                )
 
         f.close()
 
-        #next dataset
+        # next dataset
         startTime = int(x[0]) + 60000
 
-def checkCache(symbol):
 
-    #do we already have some data?
-    file_name=symbol + ".txt"
+def checkCache(symbol):
+    # do we already have some data?
+    file_name = symbol + ".txt"
     try:
         f = open(folder + file_name, "r")
         content = f.readlines()
-        #we are returning the last line to get the latest timestamp from
+        # we are returning the last line to get the latest timestamp from
         return [content[-1]]
     except:
         return 0
 
+
 def getCurrentTime():
     now = datetime.now().replace(microsecond=0).replace(second=0)
-    now = int(time.mktime(now.timetuple())*1000)
+    now = int(time.mktime(now.timetuple()) * 1000)
     return now
 
-def updatePriceData(pair):
 
-    #checking the cache to get the time of the latest data
+def updatePriceData(pair):
+    # checking the cache to get the time of the latest data
     latest_data = checkCache(pair)
 
-    #Set latest_data=0 to force a fresh update with the given start date
-    #latest_data=0
+    # Set latest_data=0 to force a fresh update with the given start date
+    # latest_data=0
 
-    if latest_data ==0:
-
+    if latest_data == 0:
         try:
-            file_name= pair + ".txt"
+            file_name = pair + ".txt"
             os.remove(folder + file_name)
         except:
             pass
 
-        print ('download all data')
+        print("download all data")
         startTime = initialStartDate
-        downloadPriceData(pair,startTime)
-        #download all dataset
+        downloadPriceData(pair, startTime)
+        # download all dataset
     else:
-        #fetch only new data
-        last_date = latest_data[0].strip().split(';')[0]
+        # fetch only new data
+        last_date = latest_data[0].strip().split(";")[0]
         last_date = datetime.strptime(last_date, "%Y-%m-%d %H:%M:%S")
 
         last_date = last_date + timedelta(minutes=1)
 
-        last_date = int(time.mktime(last_date.timetuple())*1000)
+        last_date = int(time.mktime(last_date.timetuple()) * 1000)
 
         if getCurrentTime() > last_date:
-            downloadPriceData(pair,last_date)
+            downloadPriceData(pair, last_date)
+
+
 def updateAllData():
     for symbol in pairs:
         updatePriceData(symbol)
