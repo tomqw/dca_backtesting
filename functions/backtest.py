@@ -78,21 +78,21 @@ def startBacktest(config,pair,startDate='',endDate=''):
             start = True
             #print ('Start Backtest: ' + price_date)
         else:
-            if start ==False:
+            if start is False:
                 if price_date >= startDate:
                     start = True
                     backtest_start = price_date
                     #print ('Start Backtest: ' + price_date)
 
         if endDate !='':
-            if stop == False:
+            if stop is False:
                 if price_date >= endDate:
                     stop = True
                     backtest_end = price_date
                     #print ('Stop Backtest: ' + price_date)
 
 
-        if start == True and stop==False:
+        if start is True and stop is False:
 
             open_price = float(data[1])
             high_price = float(data[2])
