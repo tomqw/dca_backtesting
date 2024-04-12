@@ -1,11 +1,9 @@
-import json,sys,os,requests
-from datetime import datetime,date,timedelta
-from time import sleep
-import time
+import sys
+from datetime import date
 
-from functions.bot_config import *
-from functions.fetch_data import *
-from functions.backtest import *
+from functions.bot_config import getAllConfigs
+from functions.fetch_data import updatePriceData
+from functions.backtest import startBacktest
 
 try:
     import xlwt

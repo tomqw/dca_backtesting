@@ -1,12 +1,4 @@
-import json,sys,os,requests
-from datetime import datetime,date,timedelta
-from time import sleep
-import time
-
-from functions.bot_config import *
-from functions.fetch_data import *
-from functions.backtest import *
-
+from functions.fetch_data import updatePriceData
 
 #lets define the pair we want to backtest
 pair = 'SOLUSDT'

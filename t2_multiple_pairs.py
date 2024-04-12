@@ -1,16 +1,11 @@
-import json,sys,os,requests
-from datetime import datetime,date,timedelta
-from time import sleep
-import time
+from datetime import date
 
-from functions.bot_config import *
-from functions.fetch_data import *
-from functions.backtest import *
+from functions.bot_config import getSingleConfig
+from functions.fetch_data import pairs, updateAllData
+from functions.backtest import saveResult, startBacktest
 
 #this updates all prices for all pairs as defined in the fetch_data.py
 updateAllData()
-
-
 
 #to see which names are available just use..
 #for config in getAllConfigs():

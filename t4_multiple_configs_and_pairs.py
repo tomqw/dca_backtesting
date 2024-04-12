@@ -1,11 +1,8 @@
-import json,sys,os,requests
-from datetime import datetime,date,timedelta
-from time import sleep
-import time
+from datetime import date
 
-from functions.bot_config import *
-from functions.fetch_data import *
-from functions.backtest import *
+from functions.bot_config import getAllConfigs
+from functions.fetch_data import updatePriceData
+from functions.backtest import saveResult, startBacktest
 
 #the date from which the backtest should start
 startDate = date(2022,4,1).strftime("%Y-%m-%d %H:%M:%S")
