@@ -11,7 +11,7 @@ folder = 'data/'
 #if you already have data and want to change the initialStartDate then
 #make sure to reforce a complete download by using latest_data = 0 in updatePriceData function
 
-initialStartDate = str(int(time.mktime(date(2022,4,1).timetuple())))+'000'
+initialStartDate = str(int(time.mktime(date(2021,1,1).timetuple())))+'000'
 
 #put in all pairs you like to download data for.. keep in mind, that it will take some time to download all data if you start a few months back!
 pairs = 'SOLUSDT','LUNAUSDT','AVAXUSDT','ADAUSDT'
