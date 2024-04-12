@@ -3,11 +3,9 @@ from datetime import datetime,date,timedelta
 from time import sleep
 import time
 
-sys.path.insert(0,'functions')
-
-from bot_config import *
-from fetch_data import *
-from backtest import *
+from functions.bot_config import *
+from functions.fetch_data import *
+from functions.backtest import *
 
 #this updates all prices for all pairs as defined in the fetch_data.py
 updateAllData()

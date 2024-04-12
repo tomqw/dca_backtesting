@@ -3,12 +3,9 @@ from datetime import datetime,date,timedelta
 from time import sleep
 import time
 
-sys.path.insert(0,'functions')
-
-from bot_config import *
-from fetch_data import *
-from backtest import *
-
+from functions.bot_config import *
+from functions.fetch_data import *
+from functions.backtest import *
 
 #lets define the pair we want to backtest
 pair = 'SOLUSDT'
