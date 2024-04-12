@@ -1,4 +1,5 @@
 env/
+functions/__pycache__
 data/*.txt
 results/*.csv
 results/*.xls
