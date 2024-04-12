@@ -1,4 +1,5 @@
-import csv,json
+import csv
+import json
 
 
 class bot_config:

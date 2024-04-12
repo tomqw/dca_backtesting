@@ -1,8 +1,6 @@
-import json,sys,os,requests,csv
-from datetime import datetime,date,timedelta
-from time import sleep
-import time
-from .fetch_data import folder
+import csv
+from datetime import datetime
+from functions.fetch_data import folder
 
 def readPriceData(pair):
     file_name=pair + ".txt"

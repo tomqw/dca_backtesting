@@ -1,7 +1,8 @@
-import json,sys,os,requests
-from datetime import datetime,date,timedelta
-from time import sleep
+import os
+import requests
 import time
+from datetime import datetime,date,timedelta
+
 
 #folder to store the data in
 folder = 'data/'
