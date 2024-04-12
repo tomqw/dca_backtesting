@@ -1,10 +1,7 @@
-import json,sys,os,requests
-from datetime import datetime,date,timedelta
-from time import sleep
-import time
+from datetime import datetime, timedelta
 
 #folder to store the data in
-folder = '../data/'
+folder = 'data/'
 
 startDate = datetime.strptime('2022-05-01',"%Y-%m-%d")
 endDate = datetime.strptime('2022-05-31',"%Y-%m-%d")
