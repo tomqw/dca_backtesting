@@ -74,7 +74,7 @@ def startBacktest(config, pair, startDate="", endDate=""):
 
     start_capital = config.max_amount_for_bot_usage
     avaiable_capital = start_capital
-    trading_fee = 0.075
+    trading_fee = 0.1
     start = False
     stop = False
     total_deals = 0
