@@ -4,3 +4,4 @@ data/*.txt
 results/*.csv
 results/*.xls
 tests/
+__pycache__/
