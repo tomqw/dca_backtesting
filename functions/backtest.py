@@ -1,12 +1,12 @@
 import csv
+import polars as pl
 from datetime import datetime
 from functions.fetch_data import folder
 
 
 def readPriceData(pair):
     file_name = pair + ".txt"
-    f = open(folder + file_name, "r")
-    content = f.readlines()
+    content = pl.read_csv(folder + file_name, separator=";", has_header=False)
     return content
 
 
@@ -90,9 +90,8 @@ def startBacktest(config, pair, startDate="", endDate=""):
 
     reset_data = True
 
-    for line in content:
-        data = line.strip().split(";")
-        price_date = data[0]
+    for row in content.iter_rows():
+        price_date = row[0]
 
         if startDate == "":
             start = True
@@ -112,10 +111,10 @@ def startBacktest(config, pair, startDate="", endDate=""):
                     # print ('Stop Backtest: ' + price_date)
 
         if start is True and stop is False:
-            open_price = float(data[1])
-            high_price = float(data[2])
-            low_price = float(data[3])
-            close_price = float(data[4])
+            open_price = row[1]
+            high_price = row[2]
+            low_price = row[3]
+            close_price = row[4]
 
             if reset_data:
                 bot_total_volume = 0
