@@ -6,7 +6,20 @@ from functions.fetch_data import folder
 
 def readPriceData(pair):
     file_name = pair + ".txt"
-    content = pl.read_csv(folder + file_name, separator=";", has_header=False)
+
+    # import all columns except open price
+    columns_to_import = [0, 2, 3, 4]
+
+    # assign data type in read process
+    dtypes_to_set = [pl.String, pl.Float32, pl.Float32, pl.Float32]
+
+    content = pl.read_csv(
+        folder + file_name,
+        separator=";",
+        has_header=False,
+        columns=columns_to_import,
+        dtypes=dtypes_to_set,
+    )
     return content
 
 
@@ -111,10 +124,10 @@ def startBacktest(config, pair, startDate="", endDate=""):
                     # print ('Stop Backtest: ' + price_date)
 
         if start is True and stop is False:
-            open_price = row[1]
-            high_price = row[2]
-            low_price = row[3]
-            close_price = row[4]
+            # open_price = row[1] - this column is skipped in read process and later is not used in backtest
+            high_price = row[1]
+            low_price = row[2]
+            close_price = row[3]
 
             if reset_data:
                 bot_total_volume = 0
