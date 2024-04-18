@@ -82,7 +82,14 @@ def saveResult(results, file_name):
     data_file.close()
 
 
-def startBacktest(config, pair, startDate="", endDate=""):
+def startBacktest(
+    config, pair, startDate="2024-01-01 00:00:00", endDate="2024-01-31 00:00:00"
+):
+    if startDate == "":
+        raise Exception("Start Date not defined")
+    if endDate == "":
+        raise Exception("End Date not defined")
+
     content = readPriceData(pair)
 
     start_capital = config.max_amount_for_bot_usage
@@ -106,15 +113,11 @@ def startBacktest(config, pair, startDate="", endDate=""):
     for row in content.iter_rows():
         price_date = row[0]
 
-        if startDate == "":
-            start = True
-            # print ('Start Backtest: ' + price_date)
-        else:
-            if start is False:
-                if price_date >= startDate:
-                    start = True
-                    backtest_start = price_date
-                    # print ('Start Backtest: ' + price_date)
+        if start is False:
+            if price_date >= startDate:
+                start = True
+                backtest_start = price_date
+                # print ('Start Backtest: ' + price_date)
 
         if endDate != "":
             if stop is False:
