@@ -2,8 +2,7 @@ env/
 env11/
 functions/__pycache__
 data/
-results/*.csv
-results/*.xls
+results/
 tests/
 __pycache__/
 .vscode/
