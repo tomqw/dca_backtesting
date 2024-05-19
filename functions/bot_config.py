@@ -48,23 +48,23 @@ class buy_and_hold:
 
 
 def getMax(config):
-    deviation = config.deviation_to_open_safety_order
-    max_safety_order_price_deviation = deviation
-    max_amount_for_bot_usage = config.base_order
-    i = 1
-    while i <= config.max_safety_orders:
-        if i == 1:
-            max_amount_for_bot_usage = max_amount_for_bot_usage + config.safety_order
-            safety_order = config.safety_order * config.safety_order_volume_scale
-        else:
-            max_amount_for_bot_usage = max_amount_for_bot_usage + safety_order
-            safety_order = safety_order * config.safety_order_volume_scale
-            deviation = deviation * config.safety_order_step_scale
-            max_safety_order_price_deviation = (
-                max_safety_order_price_deviation + deviation
-            )
+    if config.safety_order_volume_scale != 1:
+        max_amount_for_bot_usage = config.base_order + config.safety_order * (
+            1 - config.safety_order_volume_scale**config.max_safety_orders
+        ) / (1 - config.safety_order_volume_scale)
+    else:
+        max_amount_for_bot_usage = (
+            config.base_order + config.safety_order * config.max_safety_orders
+        )
 
-        i += 1
+    if config.safety_order_step_scale != 1:
+        max_safety_order_price_deviation = config.deviation_to_open_safety_order * (
+            1 - config.safety_order_step_scale**config.max_safety_orders
+        ) / (1 - config.safety_order_step_scale)
+    else:
+        max_safety_order_price_deviation = (
+            config.deviation_to_open_safety_order * config.max_safety_orders
+        )
     return round(max_safety_order_price_deviation, 2), round(max_amount_for_bot_usage)
 
 
