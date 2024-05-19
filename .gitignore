@@ -1,7 +1,9 @@
 env/
+env11/
 functions/__pycache__
-data/*.txt
+data/
 results/*.csv
 results/*.xls
 tests/
 __pycache__/
+.vscode/
