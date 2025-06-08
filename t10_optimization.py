@@ -1,37 +1,71 @@
-from datetime import date
+import math
 import os
-
-from functions.bot_config import getAllConfigs, getSingleConfig, getMax
-from functions.fetch_data import updatePriceData
-from functions.backtest import saveResult, startBacktest
-
-from ray import tune
-
-from ray.tune.search.bohb import TuneBOHB
-from ray.tune.schedulers import HyperBandForBOHB
-
-from ray.tune.search.hebo import HEBOSearch
-
-from ray.tune.search.ax import AxSearch
-
-from ray.train import RunConfig
-
-from ray.tune.search.hyperopt import HyperOptSearch
-from hyperopt import hp
-
-import random
-
 import statistics
+from datetime import date
 
-# the date from which the backtest should start an end
+import optuna
+import ray
+from ray import tune
+from ray.tune import RunConfig
+
+# Optuna
+from ray.tune.search.optuna import OptunaSearch
+from scipy.optimize import fsolve
+
+from functions.backtest import startBacktest
+from functions.bot_config import getMax
+
+# Bot settings
+search_space_min_bot_usage = 750
+search_space_max_bot_usage = 3000
+search_space_min_bot_dev = 61
+search_space_max_bot_dev = 100
+search_space_base_order = 10
+search_space_max_safety_orders_min = 45
+search_space_max_safety_orders_max = 61
+
+# The date from which the backtest should start and end
 
 # down, up, down, up
-startDate = date(2021, 4, 14).strftime("%Y-%m-%d %H:%M:%S")
-endDate = date(2024, 4, 15).strftime("%Y-%m-%d %H:%M:%S")
+# startDate = date(2021, 4, 14).strftime("%Y-%m-%d %H:%M:%S")
+# endDate = date(2024, 4, 15).strftime("%Y-%m-%d %H:%M:%S")
+
 
 # all down
-# startDate = date(2021, 11, 13).strftime("%Y-%m-%d %H:%M:%S")
-# endDate = date(2023, 1, 10).strftime("%Y-%m-%d %H:%M:%S")
+startDate = date(2021, 11, 13).strftime("%Y-%m-%d %H:%M:%S")
+endDate = date(2023, 1, 10).strftime("%Y-%m-%d %H:%M:%S")
+
+
+# RAY settings
+
+os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = "50"
+os.environ["RAY_CHDIR_TO_TRIAL_DIR"] = "0"
+# os.environ["RAY_TEMP_DIR"] = "D:\\ray_tmp" # Choose a short path
+
+ray_num_cpus_to_use = 28
+ray_num_samples = 300
+ray_max_concurrent_trials = 15
+ray_optuna_startup_trials = 50
+
+
+if not ray.is_initialized():
+    print(f"Initializing Ray with num_cpus={ray_num_cpus_to_use}")
+    try:
+        ray.init(
+            num_cpus=ray_num_cpus_to_use,
+            include_dashboard=False,  # Explicitly request the dashboard
+            # dashboard_host="0.0.0.0", # Makes it accessible from other devices on your network if needed, 127.0.0.1 for local only
+            # dashboard_port=8265, # Default, but you can try changing if you suspect a conflict
+            ignore_reinit_error=True,
+        )
+    except Exception as e:
+        print(f"Error during Ray initialization: {e}")
+        # Potentially try without dashboard if it's critical path for script to run
+        # ray.init(num_cpus=num_cpus_to_use, include_dashboard=False, ignore_reinit_error=True)
+
+print(f"Ray Cluster Resources: {ray.cluster_resources()}")
+print(f"Ray Available Resources (after init): {ray.available_resources()}")
+
 
 # we can also test one pair against all configs.
 
@@ -96,47 +130,6 @@ def runBacktest(tp, so, mstc, sos, os, ss, pairs, startDate, endDate):
         config
     )
 
-    # if these conditions are met skip backtest and return low score
-    if config.max_amount_for_bot_usage > 1500:
-        tempscore = -(config.max_amount_for_bot_usage)
-        print(tempscore)
-        return (
-            tempscore,
-            tempscore,
-            round(config.max_safety_order_price_deviation, 2),
-            round(config.max_amount_for_bot_usage, 2),
-        )
-
-    if config.max_amount_for_bot_usage < 130:
-        tempscore = -(config.max_amount_for_bot_usage)
-        print(tempscore)
-        return (
-            tempscore,
-            tempscore,
-            round(config.max_safety_order_price_deviation, 2),
-            round(config.max_amount_for_bot_usage, 2),
-        )
-
-    if config.max_safety_order_price_deviation > 60:
-        tempscore = -(config.max_safety_order_price_deviation * 10)
-        print(tempscore)
-        return (
-            tempscore,
-            tempscore,
-            round(config.max_safety_order_price_deviation, 2),
-            round(config.max_amount_for_bot_usage, 2),
-        )
-    
-    if config.max_safety_order_price_deviation < 30:
-        tempscore = (-100000 + (config.max_safety_order_price_deviation / 30) * (99000))
-        print(tempscore)
-        return (
-            tempscore,
-            tempscore,
-            round(config.max_safety_order_price_deviation, 2),
-            round(config.max_amount_for_bot_usage, 2),
-        )
-
     results = []
     for pair in pairs:
         result = startBacktest(config, pair, startDate, endDate)
@@ -173,77 +166,184 @@ def runBacktest(tp, so, mstc, sos, os, ss, pairs, startDate, endDate):
 # print(runBacktest(10, 10, pairs, startDate, endDate))
 
 
-# Define the search space for the optimization
-# search_space = {
-#     "tp": tune.quniform(0.5, 3.5, 0.1),
-#     "so": tune.quniform(10, 12, 0.2),
-#     "mstc": tune.randint(5, 50),
-#     "sos": tune.quniform(0.5, 3.5, 0.1),
-#     "os": tune.quniform(0.5, 5, 0.1),
-#     "ss": tune.quniform(0.5, 5, 0.1),
-# }
-# Define the search space for the optimization using int and than div them
-search_space_hebo = {
-    "tp": tune.randint(90, 250),
-    "so": tune.randint(50, 55),  # its 10 - 12 but divided by 5
-    # "mstc": tune.randint(5, 31),
-    "sos": tune.randint(90, 250),
-    "os": tune.randint(10, 1000),
-    "ss": tune.randint(10, 1000),
+# functions for narrowing search space
+def calculate_max_safety_orders_from_amount(
+    max_amount_for_bot_usage, base_order, safety_order, safety_order_volume_scale
+):
+    if safety_order_volume_scale == 1:
+        if safety_order == 0:
+            raise ValueError(
+                "safety_order cannot be zero when safety_order_volume_scale is 1"
+            )
+        max_safety_orders = (max_amount_for_bot_usage - base_order) / safety_order
+    else:
+        if safety_order_volume_scale <= 0:
+            raise ValueError("safety_order_volume_scale must be positive")
+        arg = (
+            1
+            + (max_amount_for_bot_usage - base_order)
+            * (safety_order_volume_scale - 1)
+            / safety_order
+        )
+        if arg <= 0:
+            raise ValueError("Invalid parameters: logarithm argument must be positive")
+        max_safety_orders = math.log(arg, safety_order_volume_scale)
+    return int(round(max_safety_orders))
 
-    #defaults:
-    # "tp": tune.randint(1, 1000),
-    # "so": tune.randint(50, 61),  # its 10 - 12 but divided by 5
-    # # "mstc": tune.randint(11, 13),
-    # "sos": tune.randint(20, 1000),
-    # "os": tune.randint(10, 1000),
-    # "ss": tune.randint(10, 1000),
 
-    #with mstc 5-30 and so 10-11
-    # - os should be 0.92 - 3.45, which means 180-2199 USDT
-    # - ss should be 0.67 - 4.3, which means 30.3% - 93,48% deviation
+def calculate_max_safety_orders_from_deviation(
+    safety_order_step_scale,
+    base_order,
+    safety_order,
+    max_safety_order_price_deviation,
+    deviation_to_open_safety_order,
+):
+    if safety_order_step_scale != 1:
+        # Rearrange the formula to solve for max_safety_orders using the math library
+        max_safety_orders = math.log(
+            1
+            - (max_safety_order_price_deviation / deviation_to_open_safety_order)
+            * (1 - safety_order_step_scale),
+        ) / math.log(safety_order_step_scale)
+    else:
+        # If safety_order_step_scale is 1, the formula simplifies to this
+        max_safety_orders = (
+            max_safety_order_price_deviation / deviation_to_open_safety_order
+        )
 
-    #with mstc 5 and so 10-11
-    # - os should be 1.64 - 2.84, which means 137-1008 USDT
-    # - ss should be 0.67 - 4.3, which means 30.3% - 93,48% deviation
+    return int(round(max_safety_orders))
 
-    #with mstc=8 and so 10-11
-    # - os should be 1.12 - 1.71, which means 146-1025 USDT
-    # - ss should be 0.67 - 2.2, which means 29.07% - 95,85% deviation
 
-    #with mstc=9 and so 10-11
-    # - os should be 1.1 - 1.55, which means 146-1022 USDT
-    # - ss should be 0.67 - 1.96, which means 29.47% - 93,16% deviation
-    
-    #with mstc=10 and so 10-11
-    # - os should be 1.06 - 1.46, which means 142-1038 USDT
-    # - ss should be 0.67 - 1.81, which means 29.75% - 97,58% deviation
+def calculate_safety_order_step_scale(
+    max_safety_orders,
+    deviation_to_open_safety_order,
+    max_safety_order_price_deviation,
+    initial_guess=1.1,
+):
+    """
+    Calculate the safety order step scale given other parameters using fsolve.
 
-    #with mstc=11 and so 10-11
-    # - os should be 1 - 1.39, which means 120-1037 USDT
-    # - ss should be 0.67 - 1.69, which means 29.93% - 97,44% deviation
+    Parameters:
+    - max_safety_orders: Maximum number of safety orders (int or float)
+    - deviation_to_open_safety_order: Initial deviation to open safety order (float)
+    - max_safety_order_price_deviation: Target maximum safety order price deviation (float)
+    - initial_guess: Initial guess for the safety order step scale (float, default=1.1)
 
-    #with mstc=12 and so 10-11
-    # - os should be 1 - 1.33, which means 140-1007 USDT
-    # - ss should be 0.66 - 1.6, which means 29.21% - 98,16% deviation
+    Returns:
+    - Rounded value of the calculated safety order step scale
+    """
 
-}
+    def equation(safety_order_step_scale):
+        if safety_order_step_scale == 1:
+            return (
+                deviation_to_open_safety_order * max_safety_orders
+                - max_safety_order_price_deviation
+            )
+        else:
+            return (
+                deviation_to_open_safety_order
+                * (1 - safety_order_step_scale**max_safety_orders)
+                / (1 - safety_order_step_scale)
+            ) - max_safety_order_price_deviation
 
-search_space_ax_manual = [
-    {"name": "tp", "type": "range", "bounds": [2.5, 3.3]},
-    # {"name": "x2", "type": "range", "bounds": [0.0, 1.0]},
-]
+    # Use fsolve to find the root of the equation
+    solution = fsolve(equation, initial_guess)
+    return round(solution[0], 2)
+
+
+def calculate_safety_order_volume_scale(
+    base_order,
+    safety_order,
+    max_safety_orders,
+    max_amount_for_bot_usage,
+    initial_guess=1.1,
+):
+    """
+    Calculate the safety order volume scale given other parameters using fsolve.
+
+    Parameters:
+    - base_order: Base order amount (float)
+    - safety_order: Safety order amount (float)
+    - max_safety_orders: Maximum number of safety orders (int or float)
+    - max_amount_for_bot_usage: Target maximum amount for bot usage (float)
+    - initial_guess: Initial guess for the safety order volume scale (float, default=1.1)
+
+    Returns:
+    - Rounded value of the calculated safety order volume scale
+    """
+
+    def equation(safety_order_volume_scale):
+        if safety_order_volume_scale == 1:
+            return (
+                base_order + safety_order * max_safety_orders - max_amount_for_bot_usage
+            )
+        else:
+            return (
+                base_order
+                + safety_order
+                * (1 - safety_order_volume_scale**max_safety_orders)
+                / (1 - safety_order_volume_scale)
+            ) - max_amount_for_bot_usage
+
+    # Use fsolve to find the root of the equation
+    solution = fsolve(equation, initial_guess)
+    return round(solution[0], 2)
+
+
+def pythonic_search_space(trial):
+    # mstc = trial.suggest_int("mstc", 13, 13)
+    mstc = trial.suggest_int(
+        "mstc", search_space_max_safety_orders_min, search_space_max_safety_orders_max
+    )
+    tp = trial.suggest_int("tp", 90, 400)
+    # so = trial.suggest_int("so", 70, 73)
+    so = trial.suggest_int("so", 50, 90)
+    # sos = trial.suggest_int("sos", 140, 145)
+    sos = trial.suggest_int("sos", 100, 400)
+    ss_min = (
+        calculate_safety_order_step_scale(
+            mstc, sos / 100, search_space_min_bot_dev, initial_guess=1.1
+        )
+        * 100
+    )
+    ss_max = (
+        calculate_safety_order_step_scale(
+            mstc, sos / 100, search_space_max_bot_dev, initial_guess=1.1
+        )
+        * 100
+    )
+    os_min = (
+        calculate_safety_order_volume_scale(
+            search_space_base_order,
+            so / 5,
+            mstc,
+            search_space_min_bot_usage,
+            initial_guess=1.1,
+        )
+        * 100
+    )
+    os_max = (
+        calculate_safety_order_volume_scale(
+            search_space_base_order,
+            so / 5,
+            mstc,
+            search_space_max_bot_usage,
+            initial_guess=1.1,
+        )
+        * 100
+    )
+    os = trial.suggest_int("os", os_min, os_max)
+    ss = trial.suggest_int("ss", ss_min, ss_max)
 
 
 # Define the optimization objective
 def optimize_my_function_hebo(conf):
     tp = conf["tp"] / 100
     so = conf["so"] / 5
-    # mstc = conf["mstc"]
-    mstc = 5
     sos = conf["sos"] / 100
     os = conf["os"] / 100
     ss = conf["ss"] / 100
+    mstc = conf["mstc"]
 
     # getmaxtemp = so * (os**(mstc)-1) / (os - 1) + 10
     # print(getmaxtemp)
@@ -265,63 +365,15 @@ def optimize_my_function_hebo(conf):
     }
 
 
-# def optimize_my_function_ax(conf):
-#     tp = conf["tp"]
-#     so = 10.2
-#     mstc = 11
-#     sos = 3.4
-#     os = 1.3
-#     ss = 1
-
-
-#     # getmaxtemp = so * (os**(mstc)-1) / (os - 1) + 10
-#     # print(getmaxtemp)
-
-#     # os_temp = (getmaxtemp - 10)/(so**mstc - getmaxtemp + 10)
-#     # print(os_temp)
-
-#     tempscore, tempmedian, tempdev, tempmax = runBacktest(
-#         tp, so, mstc, sos, os, ss, pairs, startDate, endDate
-#     )
-
-#     tempmax = float(tempmax)  # convert from int to float to avoid error from ray tune
-
-#     return {
-#         "score": tempscore,
-#         "median": tempmedian,
-#         "max_safety_order_price_deviation": tempdev,
-#         "max_amount_for_bot_usage": tempmax,
-#     }
-
-# TuneBOHB version
-
-# algo = TuneBOHB()
-# algo = tune.search.ConcurrencyLimiter(algo, max_concurrent=4)
-# scheduler = HyperBandForBOHB(
-#     time_attr="training_iteration",
-#     max_t=100,
-#     reduction_factor=4,
-#     stop_last_trials=False,
-# )
-
-# tuner = tune.Tuner(
-#     optimize_my_function,
-#     tune_config=tune.TuneConfig(
-#         metric="score", mode="max", scheduler=scheduler, search_alg=algo, num_samples=100
-#     ),
-#     param_space=search_space,
-# )
-
-# HEBO version
-
 current_best_params = [
     # {
-    #     "tp": 290,
-    #     "so": 51,
-    #     # "mstc": 11,
-    #     "sos": 340,
-    #     "os": 130,
-    #     "ss": 100,
+    #     # sliderb
+    #     "tp": 169,
+    #     "so": 71,
+    #     "mstc": 13,
+    #     "sos": 142,
+    #     "os": 140,
+    #     "ss": 119,
     # },
     # {
     #     "tp": 290,
@@ -350,45 +402,46 @@ current_best_params = [
 ]
 
 
-algo_hebo = HEBOSearch(
-    metric="median", mode="max", points_to_evaluate=current_best_params, max_concurrent=100
-)
-# algo_hebo = tune.search.ConcurrencyLimiter(algo_hebo, max_concurrent=50)
+optuna_sampler = optuna.samplers.TPESampler(n_startup_trials=ray_optuna_startup_trials)
 
-algo_hyperopt = HyperOptSearch(
-    metric="median", mode="max", points_to_evaluate=current_best_params
+algo = OptunaSearch(
+    pythonic_search_space,
+    metric="median",
+    mode="max",
+    points_to_evaluate=current_best_params,
+    sampler=optuna_sampler,  # Set the number of startup trials here
 )
 
-algo_hyperopt = tune.search.ConcurrencyLimiter(algo_hyperopt, max_concurrent=50)
+
+algo = tune.search.ConcurrencyLimiter(algo, max_concurrent=ray_max_concurrent_trials)
 
 # algo_hebo.save_to_dir("c:/Users/Tomasz/ray_results/optimize_my_function_hebo_1/")
 
-# algo_ax = AxSearch(space=search_space_ax_manual, metric="median", mode="max")
 
-trainable_with_resources = tune.with_resources(optimize_my_function_hebo, {"cpu": 0.5})
+trainable_with_resources = tune.with_resources(optimize_my_function_hebo, {"cpu": 1})
 
 # Disable changing the current working directory. Needed for relative/absolute paths
-os.environ["RAY_CHDIR_TO_TRIAL_DIR"] = "0"
 
-tuner_hebo = tune.Tuner(
+
+tuner = tune.Tuner(
     trainable_with_resources,
     tune_config=tune.TuneConfig(
-        search_alg=algo_hyperopt,
-        num_samples=2500,
+        search_alg=algo,
+        num_samples=ray_num_samples,
+        trial_dirname_creator=lambda trial: f"trial_{trial.trial_id}",  # shorten log directory name
     ),
-    # run_config=RunConfig(storage_path="c:/Users/Tomasz/ray_results/optimize_my_function_hebo_1/", name="test_experiment"),
-    param_space=search_space_hebo,
+    run_config=RunConfig(
+        # storage_path="d:/ray",
+        # name="test_experiment",
+        # minimal logging
+        log_to_file=False,
+        verbose=1,
+    ),
+    # param_space=search_space,
 )
 
-# tuner_ax = tune.Tuner(
-#     # optimize_my_function_hebo,
-#     optimize_my_function_ax,
-#     tune_config=tune.TuneConfig(
-#         search_alg=algo_ax, num_samples=10, max_concurrent_trials=10,
-#     )
-# )
 
-analysis = tuner_hebo.fit()
+analysis = tuner.fit()
 
 # Print the best result
 # print("Best result:", analysis.best_result)
@@ -411,7 +464,7 @@ df["INDEX"] = df.index + 1
 df.loc[:, "creator"] = "Tom"
 df.loc[:, "Deal Start Condition"] = "ASAP"
 df.loc[:, "(BO) Base Order Size"] = 10
-df.loc[:, "config/mstc"] = 5
+# df.loc[:, "config/mstc"] = 5
 
 # divide by 10 because they were multiplied by 10
 
