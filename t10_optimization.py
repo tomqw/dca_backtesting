@@ -7,8 +7,6 @@ import optuna
 import ray
 from ray import tune
 from ray.tune import RunConfig
-
-# Optuna
 from ray.tune.search.optuna import OptunaSearch
 from scipy.optimize import fsolve
 
@@ -23,6 +21,12 @@ search_space_max_bot_dev = 100
 search_space_base_order = 10
 search_space_max_safety_orders_min = 45
 search_space_max_safety_orders_max = 61
+search_space_tp_min = 90
+search_space_tp_max = 400
+search_space_so_min = 50
+search_space_so_max = 90
+search_space_sos_min = 100
+search_space_sos_max = 400
 
 # The date from which the backtest should start and end
 
@@ -37,13 +41,12 @@ endDate = date(2023, 1, 10).strftime("%Y-%m-%d %H:%M:%S")
 
 
 # RAY settings
-
 os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = "50"
 os.environ["RAY_CHDIR_TO_TRIAL_DIR"] = "0"
 # os.environ["RAY_TEMP_DIR"] = "D:\\ray_tmp" # Choose a short path
 
 ray_num_cpus_to_use = 28
-ray_num_samples = 300
+ray_num_samples = 10
 ray_max_concurrent_trials = 15
 ray_optuna_startup_trials = 50
 
@@ -291,15 +294,12 @@ def calculate_safety_order_volume_scale(
 
 
 def pythonic_search_space(trial):
-    # mstc = trial.suggest_int("mstc", 13, 13)
     mstc = trial.suggest_int(
         "mstc", search_space_max_safety_orders_min, search_space_max_safety_orders_max
     )
-    tp = trial.suggest_int("tp", 90, 400)
-    # so = trial.suggest_int("so", 70, 73)
-    so = trial.suggest_int("so", 50, 90)
-    # sos = trial.suggest_int("sos", 140, 145)
-    sos = trial.suggest_int("sos", 100, 400)
+    tp = trial.suggest_int("tp", search_space_tp_min, search_space_tp_max)
+    so = trial.suggest_int("so", search_space_so_min, search_space_so_max)
+    sos = trial.suggest_int("sos", search_space_sos_min, search_space_sos_max)
     ss_min = (
         calculate_safety_order_step_scale(
             mstc, sos / 100, search_space_min_bot_dev, initial_guess=1.1
@@ -337,7 +337,7 @@ def pythonic_search_space(trial):
 
 
 # Define the optimization objective
-def optimize_my_function_hebo(conf):
+def optimize_my_function(conf):
     tp = conf["tp"] / 100
     so = conf["so"] / 5
     sos = conf["sos"] / 100
@@ -415,10 +415,8 @@ algo = OptunaSearch(
 
 algo = tune.search.ConcurrencyLimiter(algo, max_concurrent=ray_max_concurrent_trials)
 
-# algo_hebo.save_to_dir("c:/Users/Tomasz/ray_results/optimize_my_function_hebo_1/")
 
-
-trainable_with_resources = tune.with_resources(optimize_my_function_hebo, {"cpu": 1})
+trainable_with_resources = tune.with_resources(optimize_my_function, {"cpu": 1})
 
 # Disable changing the current working directory. Needed for relative/absolute paths
 
