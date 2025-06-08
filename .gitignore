@@ -1,8 +1,10 @@
-env/
-env11/
 functions/__pycache__
 data/
 results/
 tests/
 __pycache__/
 .vscode/
+
+# python virtual env
+venv
+.venv
