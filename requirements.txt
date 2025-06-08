@@ -1,0 +1,6 @@
+optuna
+polars
+ray[tune]==2.44.1
+requests
+scipy
+
