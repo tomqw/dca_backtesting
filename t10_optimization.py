@@ -1,4 +1,3 @@
-import math
 import os
 import statistics
 from datetime import date
@@ -43,7 +42,6 @@ endDate = date(2023, 1, 10).strftime("%Y-%m-%d %H:%M:%S")
 # RAY settings
 os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = "50"
 os.environ["RAY_CHDIR_TO_TRIAL_DIR"] = "0"
-# os.environ["RAY_TEMP_DIR"] = "D:\\ray_tmp" # Choose a short path
 
 ray_num_cpus_to_use = 28
 ray_num_samples = 10
@@ -103,8 +101,6 @@ pairs = [
     "XTZUSDT",
     "ZILUSDT",
 ]
-# for pair in pairs:
-# updatePriceData(pair)
 
 
 def runBacktest(tp, so, mstc, sos, os, ss, pairs, startDate, endDate):
