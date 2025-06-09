@@ -170,51 +170,6 @@ def runBacktest(tp, so, mstc, sos, os, ss, pairs, startDate, endDate):
 
 
 # functions for narrowing search space
-def calculate_max_safety_orders_from_amount(
-    max_amount_for_bot_usage, base_order, safety_order, safety_order_volume_scale
-):
-    if safety_order_volume_scale == 1:
-        if safety_order == 0:
-            raise ValueError(
-                "safety_order cannot be zero when safety_order_volume_scale is 1"
-            )
-        max_safety_orders = (max_amount_for_bot_usage - base_order) / safety_order
-    else:
-        if safety_order_volume_scale <= 0:
-            raise ValueError("safety_order_volume_scale must be positive")
-        arg = (
-            1
-            + (max_amount_for_bot_usage - base_order)
-            * (safety_order_volume_scale - 1)
-            / safety_order
-        )
-        if arg <= 0:
-            raise ValueError("Invalid parameters: logarithm argument must be positive")
-        max_safety_orders = math.log(arg, safety_order_volume_scale)
-    return int(round(max_safety_orders))
-
-
-def calculate_max_safety_orders_from_deviation(
-    safety_order_step_scale,
-    base_order,
-    safety_order,
-    max_safety_order_price_deviation,
-    deviation_to_open_safety_order,
-):
-    if safety_order_step_scale != 1:
-        # Rearrange the formula to solve for max_safety_orders using the math library
-        max_safety_orders = math.log(
-            1
-            - (max_safety_order_price_deviation / deviation_to_open_safety_order)
-            * (1 - safety_order_step_scale),
-        ) / math.log(safety_order_step_scale)
-    else:
-        # If safety_order_step_scale is 1, the formula simplifies to this
-        max_safety_orders = (
-            max_safety_order_price_deviation / deviation_to_open_safety_order
-        )
-
-    return int(round(max_safety_orders))
 
 
 def calculate_safety_order_step_scale(
