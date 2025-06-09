@@ -170,27 +170,12 @@ def runBacktest(tp, so, mstc, sos, os, ss, pairs, startDate, endDate):
 
 
 # functions for narrowing search space
-
-
 def calculate_safety_order_step_scale(
     max_safety_orders,
     deviation_to_open_safety_order,
     max_safety_order_price_deviation,
     initial_guess=1.1,
 ):
-    """
-    Calculate the safety order step scale given other parameters using fsolve.
-
-    Parameters:
-    - max_safety_orders: Maximum number of safety orders (int or float)
-    - deviation_to_open_safety_order: Initial deviation to open safety order (float)
-    - max_safety_order_price_deviation: Target maximum safety order price deviation (float)
-    - initial_guess: Initial guess for the safety order step scale (float, default=1.1)
-
-    Returns:
-    - Rounded value of the calculated safety order step scale
-    """
-
     def equation(safety_order_step_scale):
         if safety_order_step_scale == 1:
             return (
@@ -216,20 +201,6 @@ def calculate_safety_order_volume_scale(
     max_amount_for_bot_usage,
     initial_guess=1.1,
 ):
-    """
-    Calculate the safety order volume scale given other parameters using fsolve.
-
-    Parameters:
-    - base_order: Base order amount (float)
-    - safety_order: Safety order amount (float)
-    - max_safety_orders: Maximum number of safety orders (int or float)
-    - max_amount_for_bot_usage: Target maximum amount for bot usage (float)
-    - initial_guess: Initial guess for the safety order volume scale (float, default=1.1)
-
-    Returns:
-    - Rounded value of the calculated safety order volume scale
-    """
-
     def equation(safety_order_volume_scale):
         if safety_order_volume_scale == 1:
             return (
