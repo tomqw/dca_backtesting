@@ -187,7 +187,7 @@ def calculate_safety_order_step_scale(
 
     # Use fsolve to find the root of the equation
     solution = fsolve(equation, initial_guess)
-    return round(solution[0], 2)
+    return solution[0]
 
 
 def calculate_safety_order_volume_scale(
@@ -212,7 +212,7 @@ def calculate_safety_order_volume_scale(
 
     # Use fsolve to find the root of the equation
     solution = fsolve(equation, initial_guess)
-    return round(solution[0], 2)
+    return solution[0]
 
 
 def pythonic_search_space(trial):
@@ -223,8 +223,12 @@ def pythonic_search_space(trial):
     so = trial.suggest_int("so", search_space_so_min, search_space_so_max)
     sos = trial.suggest_int("sos", search_space_sos_min, search_space_sos_max)
     ss_min = (
-        calculate_safety_order_step_scale(
-            mstc, sos / 100, search_space_min_bot_dev, initial_guess=1.1
+        round(
+            calculate_safety_order_step_scale(
+                mstc, sos / 100, search_space_min_bot_dev, initial_guess=1.1
+            )
+            + 0.005,
+            2,
         )
         * 100
     )
