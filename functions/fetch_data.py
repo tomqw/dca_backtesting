@@ -55,7 +55,7 @@ def downloadPriceData(symbol, startTime):
             int_date = int(time.mktime(date.timetuple()) * 1000)
 
             if int_date < getCurrentTime():
-                price_open = float(x[2])
+                price_open = float(x[1])
                 price_high = float(x[2])
                 price_low = float(x[3])
                 price_close = float(x[4])
