@@ -2,10 +2,11 @@ import os
 import requests
 import time
 from datetime import datetime, date, timedelta
+from functions.config import get_data_dir, get_binance_api_url, get_interval, get_api_limit
 
 
 # folder to store the data in
-folder = "data/"
+folder = get_data_dir()
 
 # this is the date where we start downloading our prices..
 # if you already have data and want to change the initialStartDate then
@@ -22,17 +23,18 @@ def downloadPriceData(symbol, startTime):
     endTime = str(int(time.mktime(datetime.now().timetuple()))) + "000"
 
     # this is the lowest we can get.. changing that doesnt make sense
-    interval = "1m"
+    interval = get_interval()
 
     # we want as much data as we get per call. the limit is 1500
-    limit = "1500"
+    limit = get_api_limit()
 
     while int(endTime) > int(startTime):
         print("Downloading Price Data: " + symbol)
-        interval = "1m"
+        interval = get_interval()
 
         url = (
-            "https://api.binance.com/api/v3/klines?symbol="
+            get_binance_api_url()
+            + "?symbol="
             + symbol
             + "&interval="
             + interval

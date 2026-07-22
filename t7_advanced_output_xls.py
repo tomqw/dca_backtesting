@@ -4,6 +4,7 @@ from datetime import date
 from functions.bot_config import getAllConfigs
 from functions.fetch_data import updatePriceData
 from functions.backtest import startBacktest
+from functions.config import get_results_dir
 
 try:
     import xlwt
@@ -11,7 +12,7 @@ except:
     print("Please install the module xlwt to export .xls files / pip install xlwt")
     sys.exit()
 
-results_folder = "results/"
+results_folder = get_results_dir()
 
 
 def saveXLS(results_grouped, summary, file_name):

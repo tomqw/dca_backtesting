@@ -2,6 +2,7 @@ import csv
 import polars as pl
 from datetime import datetime
 from functions.fetch_data import folder
+from functions.config import get_trading_fee_percent, get_results_dir
 
 
 def readPriceData(pair):
@@ -66,7 +67,7 @@ def calculateSafetyOrders(order_price, config):
 
 
 def saveResult(results, file_name):
-    data_file = open("results/" + file_name, "w")
+    data_file = open(get_results_dir() + file_name, "w")
     csv_writer = csv.writer(data_file)
 
     count = 0
@@ -83,18 +84,20 @@ def saveResult(results, file_name):
 
 
 def startBacktest(
-    config, pair, startDate="2024-01-01 00:00:00", endDate="2024-01-31 00:00:00"
+    config, pair, startDate="2024-01-01 00:00:00", endDate="2024-01-31 00:00:00", trading_fee=None
 ):
     if startDate == "":
         raise Exception("Start Date not defined")
     if endDate == "":
         raise Exception("End Date not defined")
 
+    if trading_fee is None:
+        trading_fee = get_trading_fee_percent()
+
     content = readPriceData(pair)
 
     start_capital = config.max_amount_for_bot_usage
     avaiable_capital = start_capital
-    trading_fee = 0.1
     start = False
     stop = False
     total_deals = 0

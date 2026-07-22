@@ -5,6 +5,9 @@ tests/
 __pycache__/
 .vscode/
 
+# user-specific configuration (copy from config.example.yaml)
+config.yaml
+
 # python virtual env
 venv
 .venv

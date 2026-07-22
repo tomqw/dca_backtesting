@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
+from functions.config import get_data_dir
 
 # folder to store the data in
-folder = "data/"
+folder = get_data_dir()
 
 startDate = datetime.strptime("2022-05-01", "%Y-%m-%d")
 endDate = datetime.strptime("2022-05-31", "%Y-%m-%d")

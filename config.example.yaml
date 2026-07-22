@@ -1,0 +1,17 @@
+# DCA Backtesting Configuration
+# Copy this file to config.yaml and customize as needed.
+# config.yaml is gitignored and will not be tracked in version control.
+
+paths:
+  data_dir: "data/"
+  results_dir: "results/"
+
+data:
+  # Binance API settings
+  binance_api_url: "https://api.binance.com/api/v3/klines"
+  interval: "1m"
+  api_limit: 1500
+
+backtest:
+  # Trading fee applied to every buy/sell (in percent).
+  trading_fee_percent: 0.075
