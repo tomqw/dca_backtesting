@@ -2,7 +2,7 @@ import os
 import requests
 import time
 from datetime import datetime, date, timedelta
-from functions.config import get_data_dir, get_binance_api_url, get_interval, get_api_limit
+from functions.config import get_data_dir, get_binance_api_url, get_interval, get_api_limit, get_pairs
 
 
 # folder to store the data in
@@ -15,7 +15,7 @@ folder = get_data_dir()
 initialStartDate = str(int(time.mktime(date(2021, 1, 1).timetuple()))) + "000"
 
 # put in all pairs you like to download data for.. keep in mind, that it will take some time to download all data if you start a few months back!
-pairs = "SOLUSDT", "LUNAUSDT", "AVAXUSDT", "ADAUSDT"
+pairs = get_pairs()
 
 
 # This function downloads all 1m data into a local file. e.g. MATICUSDT.txt
