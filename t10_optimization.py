@@ -11,6 +11,7 @@ from scipy.optimize import fsolve
 
 from functions.backtest import startBacktest
 from functions.bot_config import getMax
+from functions.config import get_pairs
 
 # Bot settings
 search_space_min_bot_usage = 750
@@ -71,36 +72,8 @@ print(f"Ray Available Resources (after init): {ray.available_resources()}")
 # we can also test one pair against all configs.
 
 
-# we are overwriting pairs here.. pairs is defined in fetch_data.. but in this example we want only two pairs..
-pairs = [
-    "AAVEUSDT",
-    "ADAUSDT",
-    "ARUSDT",
-    "ATOMUSDT",
-    "AVAXUSDT",
-    "BTCUSDT",
-    "DOTUSDT",
-    "ENJUSDT",
-    "EOSUSDT",
-    "ETHUSDT",
-    "FILUSDT",
-    "FTMUSDT",
-    "LINKUSDT",
-    "LUNAUSDT",
-    "MATICUSDT",
-    "NEOUSDT",
-    "ONEUSDT",
-    "SANDUSDT",
-    "SOLUSDT",
-    "THETAUSDT",
-    "UNIUSDT",
-    "VETUSDT",
-    "WAVESUSDT",
-    "XLMUSDT",
-    "XRPUSDT",
-    "XTZUSDT",
-    "ZILUSDT",
-]
+# we are using pairs from config
+pairs = get_pairs()
 
 
 def runBacktest(tp, so, mstc, sos, os, ss, pairs, startDate, endDate):

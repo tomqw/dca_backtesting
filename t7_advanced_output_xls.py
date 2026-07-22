@@ -4,7 +4,7 @@ from datetime import date
 from functions.bot_config import getAllConfigs
 from functions.fetch_data import updatePriceData
 from functions.backtest import startBacktest
-from functions.config import get_results_dir
+from functions.config import get_results_dir, get_pairs
 
 try:
     import xlwt
@@ -72,8 +72,8 @@ config_list = getAllConfigs()
 # whitelist = ['ta_standard','profundity','verrb','banshee','euphoria','alpha','nutcracker-2','scarta+','set_5_-_test_6','bitman','hybrid','catalyst']
 whitelist = ["euphoria", "ta_standard", "outrider"]
 
-# we are overwriting pairs here.. pairs is defined in fetch_data.. but in this example we want only two pairs..
-pairs = ["SOLUSDT", "LUNAUSDT"]
+# we are using pairs from config
+pairs = get_pairs()
 for pair in pairs:
     updatePriceData(pair)
 

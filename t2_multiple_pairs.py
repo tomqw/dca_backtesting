@@ -1,7 +1,8 @@
 from datetime import date
 
 from functions.bot_config import getSingleConfig
-from functions.fetch_data import pairs, updateAllData
+from functions.fetch_data import updateAllData
+from functions.config import get_pairs
 from functions.backtest import saveResult, startBacktest
 
 # this updates all prices for all pairs as defined in the fetch_data.py
@@ -35,6 +36,7 @@ startDate = date(2022, 4, 1).strftime("%Y-%m-%d %H:%M:%S")
 endDate = date(2022, 4, 30).strftime("%Y-%m-%d %H:%M:%S")
 
 # we can test one config against all pairs:
+pairs = get_pairs()
 results = []
 for pair in pairs:
     result = startBacktest(config, pair, startDate, endDate)

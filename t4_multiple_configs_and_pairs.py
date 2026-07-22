@@ -2,6 +2,7 @@ from datetime import date
 
 from functions.bot_config import getAllConfigs
 from functions.fetch_data import updatePriceData
+from functions.config import get_pairs
 from functions.backtest import saveResult, startBacktest
 
 # the date from which the backtest should start
@@ -33,8 +34,8 @@ whitelist = [
 ]
 # whitelist=[]
 
-# we are overwriting pairs here.. pairs is defined in fetch_data.. but in this example we want only two pairs..
-pairs = ["SOLUSDT", "LUNAUSDT"]
+# we are using pairs from config
+pairs = get_pairs()
 for pair in pairs:
     updatePriceData(pair)
 
