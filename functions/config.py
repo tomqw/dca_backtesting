@@ -74,3 +74,9 @@ def get_interval():
 def get_api_limit():
     """Return the Binance API limit."""
     return load_config()["data"]["api_limit"]
+
+
+def get_pairs():
+    """Return the list of trading pairs from config."""
+    pairs_str = load_config()["data"]["pairs"]
+    return [p.strip() for p in pairs_str.split(",")]
