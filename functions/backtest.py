@@ -244,8 +244,8 @@ def startBacktest(
 
                     # calculating the deal_times
                     deal_end = price_date
-                    d_start = datetime.strptime(deal_start, "%Y-%m-%d %H:%M:%S")
-                    d_end = datetime.strptime(deal_end, "%Y-%m-%d %H:%M:%S")
+                    d_start = datetime.fromisoformat(deal_start)
+                    d_end = datetime.fromisoformat(deal_end)
                     duration = round((d_end - d_start).total_seconds() / 3600, 2)
 
                     if duration > max_deal_time:
@@ -274,8 +274,8 @@ def startBacktest(
 
     # current deal time
     deal_end = endDate
-    d_start = datetime.strptime(deal_start, "%Y-%m-%d %H:%M:%S")
-    d_end = datetime.strptime(deal_end, "%Y-%m-%d %H:%M:%S")
+    d_start = datetime.fromisoformat(deal_start)
+    d_end = datetime.fromisoformat(deal_end)
     duration = round((d_end - d_start).total_seconds() / 3600, 2)
 
     if duration > max_deal_time:
