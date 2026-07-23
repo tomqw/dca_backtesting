@@ -105,6 +105,7 @@ def convert_pair_to_parquet(pair):
             new_columns=["timestamp", "open", "high", "low", "close"],
         ).select([
             pl.col("timestamp").cast(pl.String),
+            pl.col("open").cast(pl.Float32),
             pl.col("high").cast(pl.Float32),
             pl.col("low").cast(pl.Float32),
             pl.col("close").cast(pl.Float32),
