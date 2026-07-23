@@ -6,22 +6,7 @@ from functions.config import get_trading_fee_percent, get_results_dir
 
 
 def readPriceData(pair):
-    file_name = pair + ".txt"
-
-    # import all columns except open price
-    columns_to_import = [0, 2, 3, 4]
-
-    # assign data type in read process
-    dtypes_to_set = [pl.String, pl.Float32, pl.Float32, pl.Float32]
-
-    content = pl.read_csv(
-        folder + file_name,
-        separator=";",
-        has_header=False,
-        columns=columns_to_import,
-        dtypes=dtypes_to_set,
-    )
-    return content
+    return pl.read_parquet(folder + pair + ".parquet")
 
 
 def calculateSafetyOrders(order_price, config):

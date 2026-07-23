@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import polars as pl
 from datetime import datetime, date, timedelta
 from functions.config import get_data_dir, get_binance_api_url, get_interval, get_api_limit, get_pairs
 
@@ -96,6 +97,23 @@ def getCurrentTime():
     return now
 
 
+def convert_pair_to_parquet(pair):
+    file_name = pair + ".txt"
+    try:
+        df = pl.read_csv(
+            folder + file_name, separator=";", has_header=False,
+            new_columns=["timestamp", "open", "high", "low", "close"],
+        ).select([
+            pl.col("timestamp").cast(pl.String),
+            pl.col("high").cast(pl.Float32),
+            pl.col("low").cast(pl.Float32),
+            pl.col("close").cast(pl.Float32),
+        ])
+        df.write_parquet(folder + pair + ".parquet")
+    except Exception as e:
+        print(f"  Failed to convert {pair} to parquet: {e}")
+
+
 def updatePriceData(pair):
     # checking the cache to get the time of the latest data
     latest_data = checkCache(pair)
@@ -125,6 +143,8 @@ def updatePriceData(pair):
 
         if getCurrentTime() > last_date:
             downloadPriceData(pair, last_date)
+
+    convert_pair_to_parquet(pair)
 
 
 def updateAllData():
