@@ -11,3 +11,6 @@ config.yaml
 # python virtual env
 venv
 .venv
+
+# rust backend build artifacts
+functions/rust_backend/target/
