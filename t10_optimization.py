@@ -21,12 +21,12 @@ search_space_max_bot_dev = 100
 search_space_base_order = 10
 search_space_max_safety_orders_min = 45
 search_space_max_safety_orders_max = 61
-search_space_tp_min = 90
-search_space_tp_max = 400
-search_space_so_min = 50
-search_space_so_max = 90
-search_space_sos_min = 100
-search_space_sos_max = 400
+search_space_tp_min = 0.9
+search_space_tp_max = 4.0
+search_space_so_min = 10.0
+search_space_so_max = 18.0
+search_space_sos_min = 1.0
+search_space_sos_max = 4.0
 
 # The date from which the backtest should start and end
 
@@ -192,56 +192,53 @@ def pythonic_search_space(trial):
     mstc = trial.suggest_int(
         "mstc", search_space_max_safety_orders_min, search_space_max_safety_orders_max
     )
-    tp = trial.suggest_int("tp", search_space_tp_min, search_space_tp_max)
-    so = trial.suggest_int("so", search_space_so_min, search_space_so_max)
-    sos = trial.suggest_int("sos", search_space_sos_min, search_space_sos_max)
-    ss_min = (
-        round(
-            calculate_safety_order_step_scale(
-                mstc, sos / 100, search_space_min_bot_dev, initial_guess=1.1
-            )
-            + 0.005,
-            2,
-        )
-        * 100
-    )
-    ss_max = (
+    tp = trial.suggest_float("tp", search_space_tp_min, search_space_tp_max, step=0.01)
+    so = trial.suggest_float("so", search_space_so_min, search_space_so_max, step=0.2)
+    sos = trial.suggest_float("sos", search_space_sos_min, search_space_sos_max, step=0.01)
+    ss_min = round(
         calculate_safety_order_step_scale(
-            mstc, sos / 100, search_space_max_bot_dev, initial_guess=1.1
+            mstc, sos, search_space_min_bot_dev, initial_guess=1.1
         )
-        * 100
+        + 0.005,
+        2,
     )
-    os_min = (
+    ss_max = round(
+        calculate_safety_order_step_scale(
+            mstc, sos, search_space_max_bot_dev, initial_guess=1.1
+        ),
+        2,
+    )
+    os_min = round(
         calculate_safety_order_volume_scale(
             search_space_base_order,
-            so / 5,
+            so,
             mstc,
             search_space_min_bot_usage,
             initial_guess=1.1,
-        )
-        * 100
+        ),
+        2,
     )
-    os_max = (
+    os_max = round(
         calculate_safety_order_volume_scale(
             search_space_base_order,
-            so / 5,
+            so,
             mstc,
             search_space_max_bot_usage,
             initial_guess=1.1,
-        )
-        * 100
+        ),
+        2,
     )
-    os = trial.suggest_int("os", os_min, os_max)
-    ss = trial.suggest_int("ss", ss_min, ss_max)
+    os = trial.suggest_float("os", os_min, os_max, step=0.01)
+    ss = trial.suggest_float("ss", ss_min, ss_max, step=0.01)
 
 
 # Define the optimization objective
 def optimize_my_function(conf):
-    tp = conf["tp"] / 100
-    so = conf["so"] / 5
-    sos = conf["sos"] / 100
-    os = conf["os"] / 100
-    ss = conf["ss"] / 100
+    tp = conf["tp"]
+    so = conf["so"]
+    sos = conf["sos"]
+    os = conf["os"]
+    ss = conf["ss"]
     mstc = conf["mstc"]
 
     # getmaxtemp = so * (os**(mstc)-1) / (os - 1) + 10
@@ -363,13 +360,10 @@ df.loc[:, "Deal Start Condition"] = "ASAP"
 df.loc[:, "(BO) Base Order Size"] = 10
 # df.loc[:, "config/mstc"] = 5
 
-# divide by 10 because they were multiplied by 10
+# values already in correct float range from suggest_float
 
-df["config/tp"] = df["config/tp"] / 100
-df["config/so"] = df["config/so"] / 5
-df["config/os"] = df["config/os"] / 100
-df["config/ss"] = df["config/ss"] / 100
-df["config/sos"] = df["config/sos"] / 100
+float_cols = ["config/tp", "config/so", "config/sos", "config/os", "config/ss"]
+df[float_cols] = df[float_cols].round(2)
 
 df.to_csv("results/wynik2.csv", sep=";")
 
