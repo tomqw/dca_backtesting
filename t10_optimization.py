@@ -19,7 +19,7 @@ search_space_max_bot_usage = 3000
 search_space_min_bot_dev = 61
 search_space_max_bot_dev = 100
 search_space_base_order = 10
-search_space_max_safety_orders_min = 45
+search_space_max_safety_orders_min = 13
 search_space_max_safety_orders_max = 61
 search_space_tp_min = 0.9
 search_space_tp_max = 4.0
@@ -114,25 +114,45 @@ def runBacktest(tp, so, mstc, sos, os, ss, pairs, startDate, endDate):
         #     result["profit_percent"],
         # )
 
-    # average profit:
-    average_profit_percent = sum(item["profit_percent"] for item in results) / len(
-        results
-    )
+    n = len(results)
 
-    # median profit:
+    average_profit_percent = sum(item["profit_percent"] for item in results) / n
     median_profit_percent = statistics.median(
         [item["profit_percent"] for item in results]
     )
+    total_profit = sum(item["profit"] for item in results)
+    total_volume = sum(item["bot_total_volume"] for item in results)
+    total_deals = sum(item["total_deals"] for item in results)
+    total_capital = sum(item["total_capital"] for item in results)
+    min_profit_pct = min(item["profit_percent"] for item in results)
+    max_profit_pct = max(item["profit_percent"] for item in results)
+    min_profit = min(item["profit"] for item in results)
+    max_profit = max(item["profit"] for item in results)
+    win_rate = sum(1 for item in results if item["profit"] > 0) / n
+    avg_deal_time = statistics.mean(item["avg_deal_time"] for item in results)
+    max_deal_time = max(item["max_deal_time"] for item in results)
+    avg_so = statistics.mean(item["avg_so"] for item in results)
+    max_highest_so = max(item["highest_so"] for item in results)
 
-    # print(round(config.max_safety_order_price_deviation))
-    # print(round(config.max_amount_for_bot_usage))
-
-    return (
-        average_profit_percent,
-        median_profit_percent,
-        round(config.max_safety_order_price_deviation, 2),
-        round(config.max_amount_for_bot_usage, 2),
-    )
+    return {
+        "score": round(average_profit_percent, 2),
+        "median": round(median_profit_percent, 2),
+        "total_profit": round(total_profit, 2),
+        "total_volume": round(total_volume, 2),
+        "total_deals": total_deals,
+        "total_capital": round(total_capital, 2),
+        "min_profit_pct": round(min_profit_pct, 2),
+        "max_profit_pct": round(max_profit_pct, 2),
+        "min_profit": round(min_profit, 2),
+        "max_profit": round(max_profit, 2),
+        "win_rate": round(win_rate, 4),
+        "avg_deal_time": round(avg_deal_time, 2),
+        "max_deal_time": round(max_deal_time, 2),
+        "avg_so": round(avg_so, 2),
+        "max_highest_so": max_highest_so,
+        "max_safety_order_price_deviation": round(config.max_safety_order_price_deviation, 2),
+        "max_amount_for_bot_usage": float(round(config.max_amount_for_bot_usage, 2)),
+    }
 
 
 # print(runBacktest(10, 10, pairs, startDate, endDate))
@@ -241,24 +261,7 @@ def optimize_my_function(conf):
     ss = conf["ss"]
     mstc = conf["mstc"]
 
-    # getmaxtemp = so * (os**(mstc)-1) / (os - 1) + 10
-    # print(getmaxtemp)
-
-    # os_temp = (getmaxtemp - 10)/(so**mstc - getmaxtemp + 10)
-    # print(os_temp)
-
-    tempscore, tempmedian, tempdev, tempmax = runBacktest(
-        tp, so, mstc, sos, os, ss, pairs, startDate, endDate
-    )
-
-    tempmax = float(tempmax)  # convert from int to float to avoid error from ray tune
-
-    return {
-        "score": tempscore,
-        "median": tempmedian,
-        "max_safety_order_price_deviation": tempdev,
-        "max_amount_for_bot_usage": tempmax,
-    }
+    return runBacktest(tp, so, mstc, sos, os, ss, pairs, startDate, endDate)
 
 
 current_best_params = [
@@ -365,7 +368,7 @@ df.loc[:, "(BO) Base Order Size"] = 10
 float_cols = ["config/tp", "config/so", "config/sos", "config/os", "config/ss"]
 df[float_cols] = df[float_cols].round(2)
 
-df.to_csv("results/wynik2.csv", sep=";")
+df.to_csv("results/ray_results.csv", sep=";")
 
 # list of columns to be exported to csv
 columns_to_keep = [
